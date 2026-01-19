@@ -1,0 +1,540 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nutrition & Calorie Intake App</title>
+    <style>
+        /* Default Light Theme */
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #fff;
+            color: #333;
+            margin: 0;
+            padding: 0;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 20px auto;
+            padding: 20px;
+            background-color: #f9f9f9;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+        }
+
+        #result {
+            background-color: #e1f5fe;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+        }
+
+        #bmiResult {
+            margin-top: 20px;
+            background-color: #e0f7fa;
+            padding: 10px;
+            border-radius: 5px;
+            font-weight: bold;
+        }
+
+        .theme-toggle {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background-color: #fff;
+            border: 1px solid #ccc;
+            padding: 10px;
+            cursor: pointer;
+            font-size: 20px;
+            border-radius: 50%;
+            transition: background-color 0.3s;
+        }
+
+        .theme-toggle:hover {
+            background-color: #ddd;
+        }
+
+        /* Dark Theme */
+        body.dark-mode {
+            background-color: #121212;
+            color: #f1f1f1;
+        }
+
+        body.dark-mode .container {
+            background-color: #2a2a2a;
+            color: #f1f1f1;
+        }
+
+        body.dark-mode h1 {
+            color: #bb86fc;
+        }
+
+        body.dark-mode label,
+        body.dark-mode button {
+            color: #f1f1f1;
+        }
+
+        body.dark-mode input, 
+        body.dark-mode select {
+            background-color: #333;
+            color: #f1f1f1;
+            border: 1px solid #444;
+        }
+
+        body.dark-mode button {
+            background-color: #6200ea;
+        }
+
+        body.dark-mode button:hover {
+            background-color: #3700b3;
+        }
+
+        body.dark-mode #result {
+            background-color: #424242;
+            color: #f1f1f1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Theme Toggle Button -->
+        <button id="theme-toggle" class="theme-toggle">🌙</button>
+        <h1>Nutrition Tracker</h1>
+
+        <form id="userForm">
+            <label for="age">Age (years):</label>
+            <input type="number" id="age" required>
+
+            <label for="height">Height (cm):</label>
+            <input type="number" id="height" required>
+
+            <label for="weight">Weight (kg):</label>
+            <input type="number" id="weight" required>
+
+            <!-- Gender input field added -->
+            <label for="gender">Gender:</label>
+            <div>
+                <label><input type="radio" name="gender" value="male" required> Male</label>
+                <label><input type="radio" name="gender" value="female" required> Female</label>
+            </div>
+
+            <label for="goal">Goal:</label>
+            <select id="goal" required>
+                <option value="weight_loss">Weight Loss</option>
+                <option value="muscle_gain">Muscle Gain</option>
+                <option value="weight_gain">Weight Gain</option>
+                <option value="fat_loss">Fat Loss</option>
+            </select>
+
+            <label for="activity">Activity Level:</label>
+            <select id="activity" required>
+                <option value="sedentary">Sedentary (Little to no exercise)</option>
+                <option value="light">Light (Light exercise or sports 1-3 days/week)</option>
+                <option value="active">Active (Hard exercise or sports 4-7 days/week)</option>
+                <option value="very_active">Very Active (Very hard exercise, physical job or training twice a day)</option>
+            </select>
+
+            <label for="dietType">Diet Type:</label>
+            <select id="dietType" required>
+                <option value="veg">Vegetarian</option>
+                <option value="nonveg">Non-Vegetarian</option>
+            </select>
+
+            <button type="submit">Calculate My Diet Plan</button>
+        </form>
+
+        <!-- Result Section -->
+        <div id="result" style="display: none;">
+            <h2>Suggested Calorie Intake & Diet Plan</h2>
+            <p id="calories"></p>
+            <div id="dietPlan"></div>
+
+            <!-- Macronutrient Breakdown -->
+            <div id="macronutrients"></div>
+        </div>
+
+        <!-- BMI Result -->
+        <div id="bmiResult" style="display: none;">
+            <p id="bmi"></p>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Listen for form submission
+            document.getElementById('userForm').addEventListener('submit', function(event) {
+                event.preventDefault(); // Prevent form from submitting and reloading the page
+
+                // Get input values from the form
+                const age = parseInt(document.getElementById('age').value);
+                const height = parseInt(document.getElementById('height').value);
+                const weight = parseInt(document.getElementById('weight').value);
+                const goal = document.getElementById('goal').value;
+                const activityLevel = document.getElementById('activity').value;
+                const dietType = document.getElementById('dietType').value;
+                const gender = document.querySelector('input[name="gender"]:checked').value; // Get gender value
+
+                // Ensure valid inputs
+                if (isNaN(age) || isNaN(height) || isNaN(weight)) {
+                    alert('Please enter valid values for age, height, and weight.');
+                    return;
+                }
+
+                // Calculate BMI
+                const bmi = weight / Math.pow(height / 100, 2); // height in meters
+                let bmiCategory = '';
+                if (bmi < 18.5) bmiCategory = 'Underweight';
+                else if (bmi >= 18.5 && bmi <= 24.9) bmiCategory = 'Normal weight';
+                else if (bmi >= 25 && bmi <= 29.9) bmiCategory = 'Overweight';
+                else bmiCategory = 'Obesity';
+
+                // Display BMI and category
+                document.getElementById('bmi').textContent = `Your BMI: ${bmi.toFixed(2)} (${bmiCategory})`;
+
+                // Calculate BMR using Mifflin-St Jeor Equation based on gender
+                let bmr;
+                if (gender === 'male') {
+                    bmr = 10 * weight + 6.25 * height - 5 * age + 5;  // For men
+                } else {
+                    bmr = 10 * weight + 6.25 * height - 5 * age - 161;  // For women
+                }
+
+                // Define activity multipliers
+                const activityMultipliers = {
+                    sedentary: 1.2,
+                    light: 1.3,
+                    moderate: 1.5,
+                    active: 1.7,
+                    very_active: 1.9
+                };
+
+                // Calculate TDEE (Total Daily Energy Expenditure)
+                const tdee = bmr * activityMultipliers[activityLevel];
+
+                // Determine calorie goal based on user's goal
+                let calorieGoal;
+                if (goal === 'weight_loss') {
+                    calorieGoal = tdee - 500; // Calorie deficit for weight loss
+                } else if (goal === 'muscle_gain') {
+                    calorieGoal = tdee + 500; // Calorie surplus for muscle gain
+                } else if (goal === 'weight_gain') {
+                    calorieGoal = tdee + 300; // Calorie surplus for weight gain
+                } else if (goal === 'fat_loss') {
+                    calorieGoal = tdee - 300; // Slight deficit for fat loss
+                }
+
+                // Suggested macronutrient breakdown (as percentages of total calorie goal)
+                const protein = (0.3 * calorieGoal) / 4;  // 30% protein (4 kcal per gram)
+                const carbs = (0.4 * calorieGoal) / 4;    // 40% carbs (4 kcal per gram)
+                const fats = (0.3 * calorieGoal) / 9;     // 30% fats (9 kcal per gram)
+
+                // Diet Plan based on goal, activity level, and diet type
+                let mealPlan = '';
+                if (dietType === 'veg') {
+                    mealPlan = getVegDietPlan(goal, activityLevel);
+                } else if (dietType === 'nonveg') {
+                    mealPlan = getNonVegDietPlan(goal, activityLevel);
+                }
+
+                // Display the calorie goal, BMI, and diet plan
+                document.getElementById('calories').textContent = `Suggested Calorie Intake: ${Math.round(calorieGoal)} kcal/day`;
+                document.getElementById('bmiResult').style.display = 'block'; // Display BMI
+                document.getElementById('dietPlan').innerHTML = mealPlan;
+                document.getElementById('result').style.display = 'block';
+
+                // Display the macronutrient breakdown
+                const macronutrients = `
+                    <h3>Macronutrient Breakdown</h3>
+                    <ul>
+                        <li><strong>Protein:</strong> ${protein.toFixed(1)} grams</li>
+                        <li><strong>Carbs:</strong> ${carbs.toFixed(1)} grams</li>
+                        <li><strong>Fats:</strong> ${fats.toFixed(1)} grams</li>
+                    </ul>
+                `;
+                document.getElementById('macronutrients').innerHTML = macronutrients;
+            });
+
+            // Function to get Veg Diet Plan based on goal and activity level
+            function getVegDietPlan(goal, activityLevel) {
+                const dietPlans = {
+                    'weight_loss-sedentary': `
+    <h3>Suggested Diet Plan for Weight Loss (Vegetarian - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 100g Sprouts salad with cucumber, lemon juice</li>
+        <li><strong>Lunch:</strong> 150g Vegetable curry with 1/2 cup brown rice and 100g Greek yogurt</li>
+        <li><strong>Dinner:</strong> 150g Fruit salad with 20g honey and 1 banana</li>
+    </ul>
+`,
+'weight_loss-light': `
+    <h3>Suggested Diet Plan for Weight Loss (Vegetarian - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 50g Oats with almond milk and 1 apple</li>
+        <li><strong>Lunch:</strong> 200g Salad with quinoa and 50g avocado</li>
+        <li><strong>Dinner:</strong> 100g Cottage cheese (paneer) with mixed vegetables</li>
+    </ul>
+`,
+'weight_loss-active': `
+    <h3>Suggested Diet Plan for Weight Loss (Vegetarian - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 50g avocado</li>
+        <li><strong>Lunch:</strong> 150g Grilled tofu with 1 cup quinoa</li>
+        <li><strong>Dinner:</strong> 150g Carrot and cucumber salad with lemon juice</li>
+    </ul>
+`,
+'weight_loss-very_active': `
+    <h3>Suggested Diet Plan for Weight Loss (Vegetarian - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 1 glass protein smoothie with almond milk, 20g chia seeds, and 100g berries</li>
+        <li><strong>Lunch:</strong> 200g Chickpea curry with 100g brown rice</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 50g mixed berries</li>
+    </ul>
+`,
+'muscle_gain-sedentary': `
+    <h3>Suggested Diet Plan for Muscle Gain (Vegetarian - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 150g Paneer with spinach and 1 tbsp olive oil</li>
+        <li><strong>Lunch:</strong> 200g Soya chunks curry with 1 cup brown rice</li>
+        <li><strong>Dinner:</strong> 100g Fruit salad with 30g peanut butter</li>
+    </ul>
+`,
+'muscle_gain-light': `
+    <h3>Suggested Diet Plan for Muscle Gain (Vegetarian - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 100g oats and 1 apple</li>
+        <li><strong>Lunch:</strong> 250g Lentil stew with 100g quinoa</li>
+        <li><strong>Dinner:</strong> 100g Cottage cheese (paneer) with carrots and cucumber</li>
+    </ul>
+`,
+'muscle_gain-active': `
+    <h3>Suggested Diet Plan for Muscle Gain (Vegetarian - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 200g Paneer bhurji with 1 chapati (whole wheat)</li>
+        <li><strong>Lunch:</strong> 200g Quinoa salad with 100g tofu and 50g avocado</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 30g almonds</li>
+    </ul>
+`,
+'muscle_gain-very_active': `
+    <h3>Suggested Diet Plan for Muscle Gain (Vegetarian - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> Protein shake with almond milk, 20g chia seeds, and 100g berries</li>
+        <li><strong>Lunch:</strong> 200g Grilled chickpea salad with 100g quinoa</li>
+        <li><strong>Dinner:</strong> 150g Greek yogurt with 10g flax seeds and 20g honey</li>
+    </ul>
+`,
+'weight_gain-sedentary': `
+    <h3>Suggested Diet Plan for Weight Gain (Vegetarian - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 100g Oats with 30g mixed nuts and 1 tbsp honey</li>
+        <li><strong>Lunch:</strong> 250g Vegetable curry with 1 cup brown rice</li>
+        <li><strong>Dinner:</strong> 100g Cottage cheese (paneer) with 20g almond butter</li>
+    </ul>
+`,
+'weight_gain-light': `
+    <h3>Suggested Diet Plan for Weight Gain (Vegetarian - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 200g Smoothie with 1 banana, 50g oats, and 20g almond butter</li>
+        <li><strong>Lunch:</strong> 300g Grilled tofu with 100g rice and mixed vegetables</li>
+        <li><strong>Dinner:</strong> 150g Greek yogurt with 50g granola</li>
+    </ul>
+`,
+'weight_gain-active': `
+    <h3>Suggested Diet Plan for Weight Gain (Vegetarian - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 50g avocado and spinach</li>
+        <li><strong>Lunch:</strong> 200g Grilled tofu with 100g quinoa and mixed veggies</li>
+        <li><strong>Dinner:</strong> 100g Fruit salad with 10g flax seeds and 1 tbsp lemon juice</li>
+    </ul>
+`,
+'weight_gain-very_active': `
+    <h3>Suggested Diet Plan for Weight Gain (Vegetarian - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> Protein shake with almond milk and 20g chia seeds</li>
+        <li><strong>Lunch:</strong> 150g Grilled chickpea salad with 100g quinoa</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 50g mixed berries</li>
+    </ul>
+`,
+'fat_loss-sedentary': `
+    <h3>Suggested Diet Plan for Fat Loss (Vegetarian - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 100g Sprouts with cucumber and lemon</li>
+        <li><strong>Lunch:</strong> 150g Grilled tofu with 100g brown rice</li>
+        <li><strong>Dinner:</strong> 150g Apple with 30g almonds</li>
+    </ul>
+`,
+'fat_loss-light': `
+    <h3>Suggested Diet Plan for Fat Loss (Vegetarian - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 50g Oats with almond milk and 100g mixed berries</li>
+        <li><strong>Lunch:</strong> 100g Grilled paneer with 100g mixed vegetables</li>
+        <li><strong>Dinner:</strong> 100g Carrot and cucumber salad with lemon juice</li>
+    </ul>
+`,
+'fat_loss-active': `
+    <h3>Suggested Diet Plan for Fat Loss (Vegetarian - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 50g avocado</li>
+        <li><strong>Lunch:</strong> 150g Grilled chickpeas with 100g quinoa</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with fruits</li>
+    </ul>
+`,
+'fat_loss-very_active': `
+    <h3>Suggested Diet Plan for Fat Loss (Vegetarian - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> Protein shake with almond milk and chia seeds</li>
+        <li><strong>Lunch:</strong> 150g Grilled tofu with 100g quinoa</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 50g mixed berries</li>
+    </ul>
+`,
+                    // Add more combinations here for VEG diet...
+                };
+                return dietPlans[`${goal}-${activityLevel}`] || 'No specific plan available.';
+            }
+
+            // Function to get Non-Veg Diet Plan based on goal and activity level
+            function getNonVegDietPlan(goal, activityLevel) {
+                const dietPlans = {
+                    'weight_loss-sedentary': `
+    <h3>Suggested Diet Plan for Weight Loss (Non-Veg - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 50g avocado and spinach</li>
+        <li><strong>Lunch:</strong> 200g Grilled chicken breast with 1/2 cup quinoa and mixed veggies (100g)</li>
+        <li><strong>Dinner:</strong> 100g Fruit salad (apple, berries) with 20g flax seeds</li>
+    </ul>
+`,
+'weight_loss-light': `
+    <h3>Suggested Diet Plan for Weight Loss (Non-Veg - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 100g Scrambled eggs with 50g avocado</li>
+        <li><strong>Lunch:</strong> 200g Chicken breast salad with 100g quinoa and mixed greens</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 50g mixed berries</li>
+    </ul>
+`,
+'weight_loss-active': `
+    <h3>Suggested Diet Plan for Weight Loss (Non-Veg - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 50g avocado</li>
+        <li><strong>Lunch:</strong> 150g Grilled chicken breast with 100g brown rice and mixed veggies (100g)</li>
+        <li><strong>Dinner:</strong> 100g Carrot and cucumber salad with 10g lemon juice</li>
+    </ul>
+`,
+'weight_loss-very_active': `
+    <h3>Suggested Diet Plan for Weight Loss (Non-Veg - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> Protein shake with almond milk (200ml), 20g chia seeds, and 100g berries</li>
+        <li><strong>Lunch:</strong> 200g Grilled chicken breast with 100g mixed vegetables (broccoli, carrots)</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 20g flax seeds</li>
+    </ul>
+`,
+'muscle_gain-sedentary': `
+    <h3>Suggested Diet Plan for Muscle Gain (Non-Veg - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 100g Scrambled eggs with 50g avocado and veggies (spinach, tomatoes)</li>
+        <li><strong>Lunch:</strong> 200g Grilled chicken breast with 1/2 cup brown rice and mixed veggies (100g)</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 30g mixed nuts</li>
+    </ul>
+`,
+'muscle_gain-light': `
+    <h3>Suggested Diet Plan for Muscle Gain (Non-Veg - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 150g Omelette with 50g mushrooms, 20g cheese, and spinach</li>
+        <li><strong>Lunch:</strong> 250g Grilled chicken with 1 cup quinoa and 50g avocado</li>
+        <li><strong>Dinner:</strong> 100g Cottage cheese (paneer) with 100g fruit (apple, banana)</li>
+    </ul>
+`,
+'muscle_gain-active': `
+    <h3>Suggested Diet Plan for Muscle Gain (Non-Veg - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 200g Grilled chicken breast with 2 boiled eggs</li>
+        <li><strong>Lunch:</strong> 250g Chicken with 100g quinoa and 100g mixed veggies (broccoli, carrots)</li>
+        <li><strong>Dinner:</strong> 150g Greek yogurt with 30g almonds</li>
+    </ul>
+`,
+'muscle_gain-very_active': `
+    <h3>Suggested Diet Plan for Muscle Gain (Non-Veg - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> Protein shake with almond milk (200ml), 20g chia seeds, and 100g berries</li>
+        <li><strong>Lunch:</strong> 200g Grilled fish (salmon) with 1 cup quinoa</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 20g almonds</li>
+    </ul>
+`,
+'weight_gain-sedentary': `
+    <h3>Suggested Diet Plan for Weight Gain (Non-Veg - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 200g Scrambled eggs with 50g avocado</li>
+        <li><strong>Lunch:</strong> 250g Grilled chicken with 1 cup rice and 100g mixed veggies</li>
+        <li><strong>Dinner:</strong> 150g Greek yogurt with 30g almonds</li>
+    </ul>
+`,
+'weight_gain-light': `
+    <h3>Suggested Diet Plan for Weight Gain (Non-Veg - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 200g Omelette with 100g vegetables (onions, mushrooms, spinach)</li>
+        <li><strong>Lunch:</strong> 300g Chicken curry with 1 cup brown rice</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 30g mixed nuts</li>
+    </ul>
+`,
+'weight_gain-active': `
+    <h3>Suggested Diet Plan for Weight Gain (Non-Veg - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 200g Grilled chicken with 2 boiled eggs and 50g avocado</li>
+        <li><strong>Lunch:</strong> 300g Chicken with 100g quinoa and 100g mixed veggies</li>
+        <li><strong>Dinner:</strong> 150g Greek yogurt with fruits (berries, banana)</li>
+    </ul>
+`,
+'weight_gain-very_active': `
+    <h3>Suggested Diet Plan for Weight Gain (Non-Veg - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> Protein shake with almond milk (200ml) and 20g chia seeds</li>
+        <li><strong>Lunch:</strong> 200g Grilled chicken with 1 cup quinoa and mixed veggies</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 20g flax seeds</li>
+    </ul>
+`,
+'fat_loss-sedentary': `
+    <h3>Suggested Diet Plan for Fat Loss (Non-Veg - Sedentary):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 50g avocado</li>
+        <li><strong>Lunch:</strong> 150g Grilled chicken breast with mixed veggies</li>
+        <li><strong>Dinner:</strong> 100g Fruit salad with 20g flax seeds</li>
+    </ul>
+`,
+'fat_loss-light': `
+    <h3>Suggested Diet Plan for Fat Loss (Non-Veg - Light):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 150g Scrambled eggs with spinach</li>
+        <li><strong>Lunch:</strong> 200g Chicken breast with 100g quinoa</li>
+        <li><strong>Dinner:</strong> 100g Carrot and cucumber salad with 10g lemon juice</li>
+    </ul>
+`,
+'fat_loss-active': `
+    <h3>Suggested Diet Plan for Fat Loss (Non-Veg - Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> 2 boiled eggs with 50g avocado</li>
+        <li><strong>Lunch:</strong> 200g Grilled chicken with 100g quinoa</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with mixed berries</li>
+    </ul>
+`,
+'fat_loss-very_active': `
+    <h3>Suggested Diet Plan for Fat Loss (Non-Veg - Very Active):</h3>
+    <ul>
+        <li><strong>Breakfast:</strong> Protein shake with almond milk (200ml) and chia seeds</li>
+        <li><strong>Lunch:</strong> 200g Grilled chicken with mixed veggies</li>
+        <li><strong>Dinner:</strong> 100g Greek yogurt with 20g flax seeds</li>
+    </ul>
+`,
+                    // Add more combinations here for NON-VEG diet...
+                };
+                return dietPlans[`${goal}-${activityLevel}`] || 'No specific plan available.';
+            }
+
+            // Theme toggle functionality
+            document.getElementById('theme-toggle').addEventListener('click', function() {
+                document.body.classList.toggle('dark-mode');
+                const isDarkMode = document.body.classList.contains('dark-mode');
+                this.textContent = isDarkMode ? '☀️' : '🌙';
+            });
+        });
+    </script>
+</body>
+</html>
